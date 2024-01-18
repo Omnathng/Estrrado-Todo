@@ -75,10 +75,10 @@ function Main() {
     const { title, description } = todoDetails;
     if (title.trim() !== "" && description.trim() !== "") {
       const newTodo = {
-        id: uuidv4(), // Generate a unique ID
+        id: uuidv4(), 
         title,
         description,
-        completed: false, // Initial status is incomplete
+        completed: false,
       };
 
       dispatch({
@@ -174,13 +174,12 @@ function Main() {
               {todo.completed ? 'Completed' : 'Incomplete'}
             </div>
             <button className='btn btn-outline-dark' onClick={() => handleDelete(todo.id)}>Delete</button>
-            {/* Use the same button to open the modal and pass the todo details */}
             <button className='btn btn-outline-dark' onClick={() => handleViewDetails(todo)}>View Details</button>
           </div>
         ))}
       </div>
 
-      {/* React Bootstrap Modal */}
+      {/* Modal */}
       <Modal show={showModal} onHide={handleCloseModal}>
         <Modal.Header closeButton>
           <Modal.Title>Todo Details</Modal.Title>
