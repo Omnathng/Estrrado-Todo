@@ -1,54 +1,92 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useTodo } from '../context/taskContext';
+import { v4 as uuidv4 } from 'uuid';
+import { Modal, Button } from 'react-bootstrap';
 import './style.css';
+import logo from '../assets/Logo.jpeg';
 
 function Main() {
+  const { state, dispatch } = useTodo();
   const mainDivRef = useRef(null);
   const [showSecondInput, setShowSecondInput] = useState(false);
-  const [notes, setNotes] = useState([]);
-  const [noteDetails, setNoteDetails] = useState({
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedTodo, setSelectedTodo] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+  };
+
+  const handleToggleStatus = () => {
+    if (selectedTodo) {
+      const updatedTodos = state.todos.map((todo) =>
+        todo.id === selectedTodo.id ? { ...todo, completed: !todo.completed } : todo
+      );
+
+      dispatch({ type: 'SET_TODOS', payload: updatedTodos });
+      setShowModal(false);
+    }
+  };
+
+  const [todoDetails, setTodoDetails] = useState({
     title: "",
     description: "",
   });
-  const [searchTerm, setSearchTerm] = useState("");
 
   const handleSearchChange = (e) => {
     setSearchTerm(e.target.value);
   };
 
+  const handleViewDetails = (todo) => {
+    setSelectedTodo(todo);
+    setShowModal(true);
+  };
+
   const handleSearchButtonClick = () => {
-    const filteredNotes = notes.filter((note) =>
-      note.title.toLowerCase().includes(searchTerm.toLowerCase())
+    const filteredTodos = state.todos.filter((todo) =>
+      todo.title.toLowerCase().includes(searchTerm.toLowerCase())
     );
-    setNotes(filteredNotes);
+    dispatch({ type: 'SET_TODOS', payload: filteredTodos });
   };
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
-    const filteredNotes = notes.filter((note) =>
-      note.title.toLowerCase().includes(searchTerm.toLowerCase())
+    const filteredTodos = state.todos.filter((todo) =>
+      todo.title.toLowerCase().includes(searchTerm.toLowerCase())
     );
-    setNotes(filteredNotes);
+    dispatch({ type: 'SET_TODOS', payload: filteredTodos });
   };
 
   const handleTitle = (e) => {
-    setNoteDetails((prevNoteDetails) => ({
-      ...prevNoteDetails,
+    setTodoDetails((prevTodoDetails) => ({
+      ...prevTodoDetails,
       title: e.target.value,
     }));
   };
 
   const handleDescription = (e) => {
-    setNoteDetails((prevNoteDetails) => ({
-      ...prevNoteDetails,
+    setTodoDetails((prevTodoDetails) => ({
+      ...prevTodoDetails,
       description: e.target.value,
     }));
   };
 
   const handleAdd = () => {
-    const { title, description } = noteDetails;
+    const { title, description } = todoDetails;
     if (title.trim() !== "" && description.trim() !== "") {
-      setNotes([...notes, { title, description }]);
-      setNoteDetails({
+      const newTodo = {
+        id: uuidv4(), // Generate a unique ID
+        title,
+        description,
+        completed: false, // Initial status is incomplete
+      };
+
+      dispatch({
+        type: 'ADD_TODO',
+        payload: newTodo,
+      });
+
+      setTodoDetails({
         title: "",
         description: "",
       });
@@ -56,10 +94,8 @@ function Main() {
     }
   };
 
-  const handleDelete = (index) => {
-    const updatedNotes = [...notes];
-    updatedNotes.splice(index, 1);
-    setNotes(updatedNotes);
+  const handleDelete = (id) => {
+    dispatch({ type: 'REMOVE_TODO', payload: id });
   };
 
   const expandInput = () => {
@@ -84,12 +120,12 @@ function Main() {
     <div ref={mainDivRef} className="main-container d-flex flex-column" style={{ width: '100%' }}>
       <nav className="navbar bg-body-tertiary">
         <div className="container-fluid">
-          <a className="navbar-brand">BlogL</a>
+          <img src={logo} alt="" />
           <form className="d-flex" role="search" onSubmit={handleSearchSubmit}>
-            <div className='pt-2 pb-2 ps-3 pe-3 d-flex' style={{border:'1px solid #ccc',borderRadius:'25px'}}>
+            <div className='pt-2 pb-2 ps-3 pe-3 d-flex' style={{ border: '1px solid #ccc', borderRadius: '25px' }}>
               <input
                 type="text"
-                style={{width:'400px',border:'0',outline:"0",background:'transparent'}}
+                style={{ width: '400px', border: '0', outline: "0", background: 'transparent' }}
                 placeholder='Search'
                 value={searchTerm}
                 onChange={handleSearchChange}
@@ -108,8 +144,8 @@ function Main() {
             <input
               type="text"
               style={{ width: '100%', border: '0', outline: "0", background: 'transparent' }}
-              placeholder='Title'
-              value={noteDetails.title}
+              placeholder='Enter a Task'
+              value={todoDetails.title}
               onChange={handleTitle}
             />
             <i onClick={handleAdd} className="fa-solid fa-check"></i>
@@ -123,22 +159,46 @@ function Main() {
             type="text"
             style={{ width: '100%', border: '0', outline: "0", background: 'transparent' }}
             placeholder='Add the Content'
-            value={noteDetails.description}
+            value={todoDetails.description}
             onChange={handleDescription}
           />
         </div>
       </div>
 
-      {/* Display Notes */}
-      <div className="notes-list  m-3 d-flex flex-wrap">
-        {notes.map((note, index) => (
-          <div key={index} className="note-card m-3 p-3" style={{ border: '1px solid #ccc', borderRadius: '10px' }}>
-            <h3>{note.title}</h3>
-            <p>{note.description}</p>
-            <button className='btn btn-outline-dark' onClick={() => handleDelete(index)}>Delete</button>
+      <div className="todos-list  m-3 d-flex flex-wrap">
+        {state.todos.map((todo) => (
+          <div key={todo.id} className="note-card m-3 p-3" style={{ border: '1px solid #ccc', borderRadius: '10px' }}>
+            <h3>{todo.title}</h3>
+            <p>{todo.description}</p>
+            <div className={`status ${todo.completed ? 'completed' : 'incomplete'}`}>
+              {todo.completed ? 'Completed' : 'Incomplete'}
+            </div>
+            <button className='btn btn-outline-dark' onClick={() => handleDelete(todo.id)}>Delete</button>
+            {/* Use the same button to open the modal and pass the todo details */}
+            <button className='btn btn-outline-dark' onClick={() => handleViewDetails(todo)}>View Details</button>
           </div>
         ))}
       </div>
+
+      {/* React Bootstrap Modal */}
+      <Modal show={showModal} onHide={handleCloseModal}>
+        <Modal.Header closeButton>
+          <Modal.Title>Todo Details</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p>Title: {selectedTodo && selectedTodo.title}</p>
+          <p>Description: {selectedTodo && selectedTodo.description}</p>
+          <p>Status: {selectedTodo && (selectedTodo.completed ? 'Completed' : 'Incomplete')}</p>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={handleCloseModal}>
+            Close
+          </Button>
+          <Button variant="primary" onClick={handleToggleStatus}>
+            {selectedTodo && (selectedTodo.completed ? 'Mark Incomplete' : 'Mark Completed')}
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 }

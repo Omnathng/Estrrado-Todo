@@ -32,3 +32,15 @@
     align-items: center;
     justify-content: center;
   }
+  .status {
+    font-weight: bold;
+    padding: 5px;
+  }
+  
+  .completed {
+    color: green;
+  }
+  
+  .incomplete {
+    color: red;
+  }
